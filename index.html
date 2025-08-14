@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Totally Normal Browser (Definitely Not Adware)</title>
+
+  <!-- Font: Noto Sans -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ...existing styles... */
+  </style>
+
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- Import map (kept minimal; marked/dompurify available if needed later) -->
+  <script type="importmap">
+    {
+      "imports": {
+        "marked": "https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js",
+        "dompurify": "https://cdn.jsdelivr.net/npm/dompurify/dist/purify.es.min.js"
+      }
+    }
+  </script>
+</head>
+<body>
+  <!-- Fullscreen container -->
+  <div id="app">
+    <!-- The "normal" site -->
+    <iframe id="mainFrame" src="https://websim.com" title="websim" loading="eager"></iframe>
+
+    <!-- Transparent interaction catcher to detect user activity even when clicking the iframe area -->
+    <div id="interaction-catcher" aria-hidden="true"></div>
+
+    <!-- Ad layer (hidden initially) -->
+    <div id="ad-layer" class="hidden" role="dialog" aria-live="polite" aria-label="Invasive ad">
+      <button id="ad-close" aria-label="Close ad">×</button>
+      <div class="ad-content">
+        <img id="ad-image" alt="Ad image" />
+        <div class="ad-text">
+          <h3 id="ad-headline"></h3>
+          <p id="ad-sub"></p>
+          <button id="ad-cta">Open</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Subtle debug/status UI -->
+    <div id="status">
+      <span id="status-msg">Ready</span>
+    </div>
+  </div>
+
+  <script type="module" src="script.js"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4c6229722a6346bc8eb5cb0e5eae5d41","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
+
