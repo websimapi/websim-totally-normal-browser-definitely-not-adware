@@ -125,36 +125,43 @@ async function ensureTargets(minCount = 100) {
   if (adTargets.length >= minCount || loadingTargets) return;
   loadingTargets = true;
   try {
-    // Load first page with up to 100, then get more if needed
     const proj = await safeGetProject();
-    if (!proj) {
-      // No websim context; use fallback
-      mergeFallbackTargets();
-      return;
-    }
-
-    // First fetch: get up to 100
+    if (!proj) { mergeFallbackTargets(); return; }
     let params = new URLSearchParams({ first: '100' });
-    let resp = await fetch(`/api/v1/projects/${proj.id}/comments?` + params.toString());
-    let data = await resp.json();
-    consumeComments(data?.comments?.data ?? []);
-    cursor = data?.comments?.meta?.end_cursor ?? null;
-
-    // If still not enough, fetch another page
-    if (adTargets.length < minCount && cursor) {
-      params = new URLSearchParams({ after: cursor, first: '100' });
-      resp = await fetch(`/api/v1/projects/${proj.id}/comments?` + params.toString());
-      data = await resp.json();
+    let keepGoing = true, pageCount = 0;
+    while (keepGoing && adTargets.length < minCount && pageCount < 10) {
+      const resp = await fetch(`/api/v1/projects/${proj.id}/comments?` + params.toString());
+      const data = await resp.json();
       consumeComments(data?.comments?.data ?? []);
+      const meta = data?.comments?.meta;
+      params = meta?.end_cursor ? new URLSearchParams({ after: meta.end_cursor, first: '100' }) : params;
+      keepGoing = !!meta?.has_next_page; pageCount++;
     }
-
-    if (adTargets.length < 10) mergeFallbackTargets();
+    if (adTargets.length < 5) await ensureMetaTargets(); // digested all pages; use metadata
   } catch (e) {
     console.warn('Failed to load comments, using fallback', e);
-    mergeFallbackTargets();
+    await ensureMetaTargets();
   } finally {
     loadingTargets = false;
   }
+}
+
+async function ensureMetaTargets() {
+  try {
+    const proj = await safeGetProject();
+    const owner = await window.websim?.getCreator?.();
+    if (proj?.id) {
+      const projUrl = `https://websim.com/p/${proj.id}`;
+      const title = proj?.title || 'A Websim Project';
+      const desc = (proj?.description || '').slice(0, 120) || 'Open to explore this creation.';
+      if (!adTargets.find(t => t.url === projUrl)) adTargets.push({ url: projUrl, commentSnippet: `${title} — ${desc}`, fromMeta: true });
+    }
+    if (owner?.username) {
+      const profileUrl = `https://websim.com/@${owner.username}`;
+      if (!adTargets.find(t => t.url === profileUrl)) adTargets.push({ url: profileUrl, commentSnippet: `Discover more from @${owner.username}`, fromMeta: true });
+    }
+  } catch { /* ignore */ }
+  mergeFallbackTargets();
 }
 
 function consumeComments(items) {
@@ -181,12 +188,12 @@ function mergeFallbackTargets() {
 
 /* Creative generation */
 async function buildCreative() {
-  // Pick a random target
+  if (!adTargets.length) await ensureMetaTargets();
   if (!adTargets.length) return null;
   const target = adTargets[randInt(0, adTargets.length - 1)];
   const base = {
     url: target.url,
-    headline: 'You won’t believe what’s inside.',
+    headline: target.fromMeta ? 'Peek behind this project.' : 'You won’t believe what’s inside.',
     sub: target.commentSnippet || 'Tap to unlock the surprise.',
     image: ''
   };
@@ -359,5 +366,3 @@ async function safeGetProject() {
     return null;
   }
 }
-/* ...existing code... */
-
